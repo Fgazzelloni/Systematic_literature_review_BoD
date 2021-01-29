@@ -2,9 +2,15 @@
 # [burden-eu] Systematic literature review of BoD studies ########
 
 ## Systematic Review ######################
+
+
 library(readr)
 
 data<-read_csv("Included_literature_CDs.csv")
+id<-seq(1,length(data$Authors),by=1)
+
+data<-cbind(id,data)
+
 head(data)
 View(data)
 dim(data)
@@ -14,6 +20,9 @@ data%>%filter(Journal=="IHME")
 
 
 data_injury<-read_csv("Included_literature_injuries.csv")
+id<-seq(1,length(data_injury$Authors),by=1)
+data_injury<-cbind(id,data_injury)
+
 head(data_injury)
 View(data_injury)
 data_injury%>%filter(Journal=="IHME")
