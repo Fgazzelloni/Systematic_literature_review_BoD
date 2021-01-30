@@ -4,10 +4,7 @@
 
 ## Systematic Review ######################
 
-<<<<<<< HEAD
 
-=======
->>>>>>> a653c1e30f5422e8afa31ae6d7a23cfe37a09165
 library(readr)
 library(dplyr)
 
@@ -16,9 +13,6 @@ library(dplyr)
 
 #load data "literature CDs" and check of the dimention and structure
 data<-read_csv("Included_literature_CDs.csv")
-id<-seq(1,length(data$Authors),by=1)
-
-data<-cbind(id,data)
 
 head(data)
 glimpse(data)
@@ -61,8 +55,6 @@ plyr::count(data$Authors)
 
 #load data "literature_injuries" and check of the dimention and structure
 data_injury<-read_csv("Included_literature_injuries.csv")
-id<-seq(1,length(data_injury$Authors),by=1)
-data_injury<-cbind(id,data_injury)
 
 head(data_injury)
 glimpse(data_injury)
