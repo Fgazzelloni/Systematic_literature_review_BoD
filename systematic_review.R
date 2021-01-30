@@ -24,7 +24,7 @@ data
 
 #check if further "NAs" are in the "data" set
 table(is.na.data.frame(data))
-missing_values<-data[rowSums(is.na(data)) > 0, ] 
+missing_values<-data[rowSums(is.na(data)) > 0, ]
 
 missing_values["URL"]
 missing_values["Objectives"]
@@ -36,7 +36,7 @@ utils::browseURL(url)
 
 # the article is found at :
 # https://journals.lww.com/aidsonline/fulltext/1999/08200/mortality_in_young_adults_in_england_and_wales_.14.aspx
-# and missing "Journal" is: 
+# and missing "Journal" is:
 # Wolters Kluwer AIDS
 
 
