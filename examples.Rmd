@@ -1,0 +1,73 @@
+#####################################
+
+# source:
+http://amunategui.github.io/pubmed-query/#sourcecode
+
+Full source code (also on GitHub):
+  
+  #install.packages("RISmed")
+  
+  EUtilsSummary function helps narrow a search query
+```{r}
+library(RISmed)
+
+search_topic <- 'copd'
+search_query <- EUtilsSummary(search_topic, retmax=100, mindate=2012,maxdate=2012)
+summary(search_query)
+```
+  
+
+
+# see the ids of our returned query
+```{r}
+QueryId(search_query)
+```
+
+
+
+# get actual data from PubMed
+```{r}
+records<- EUtilsGet(search_query)
+class(records)
+```
+
+
+
+# store it
+```{r}
+pubmed_data <- data.frame('Title'=ArticleTitle(records),'Abstract'=AbstractText(records))
+head(pubmed_data,1)
+```
+
+
+```{r}
+pubmed_data$Abstract <- as.character(pubmed_data$Abstract)
+pubmed_data$Abstract <- gsub(",", " ", pubmed_data$Abstract, fixed = TRUE)
+```
+
+
+
+# see what we have
+```{r}
+str(pubmed_data)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
