@@ -157,4 +157,40 @@ jst_import_zip(
   out_file = "out_file"
 )
 
+# RISmed search------------------------------------
+# source: http://amunategui.github.io/pubmed-query/#sourcecode
+
+# EUtilsSummary function helps narrow a search query
+
+search_topic <- 'copd'
+search_query <- EUtilsSummary(search_topic, retmax=100, mindate=2012,maxdate=2012)
+summary(search_query)
+
+QueryId(search_query)
+records<- EUtilsGet(search_query)
+class(records)
+
+pubmed_data <- data.frame('Title'=ArticleTitle(records),'Abstract'=AbstractText(records))
+head(pubmed_data,1)
+
+pubmed_data$Abstract <- as.character(pubmed_data$Abstract)
+pubmed_data$Abstract <- gsub(",", " ", pubmed_data$Abstract, fixed = TRUE)
+
+str(pubmed_data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
