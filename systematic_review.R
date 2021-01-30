@@ -17,6 +17,7 @@ dim(data)# 1048475       6
 #get a rid of the NA
 data<-data%>%filter(!is.na(data))
 dim(data)
+data
 
 #check if further "NAs" are in the "data" set
 table(is.na.data.frame(data))
@@ -28,6 +29,8 @@ missing_values["Title"]
 
 # url is not matching
 # url<-"https://pubmed-ncbi-nlm-nih-gov.eur.idm.oclc.org/10465078/"
+utils::browseURL(url)
+
 # the article is found at :
 # https://journals.lww.com/aidsonline/fulltext/1999/08200/mortality_in_young_adults_in_england_and_wales_.14.aspx
 # and missing "Journal" is: 
@@ -40,6 +43,11 @@ dim(no_duplicates_data)
 
 data_duplicated<-subset(data,duplicated(data))
 data_duplicated["Authors"]
+
+
+#check of the Author's name spelled correctly
+plyr::count(data$Authors)
+
 ######################################################
 
 #load data "literature_injuries" and check of the dimention and structure
@@ -61,6 +69,8 @@ dim(no_duplicates_data_injury)
 
 data_duplicated<-subset(data,duplicated(data))
 data_duplicated["Authors"]
+
+
 ###########################################
 
 #check of the repetitions within the two sets
@@ -84,5 +94,14 @@ data_duplicated_full
 dim(data_duplicated_full)
 #it looks like there are 70 replications within the two main sets of whic one is the repetition i the "data" set found above
 data_duplicated_full["Authors"]
+
+require(readr)
+write.csv(data_duplicated_full,"data_duplicated_full.csv")
+
+
+
+
+
+
 
 
