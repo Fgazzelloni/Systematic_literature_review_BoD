@@ -146,15 +146,15 @@ arxiv_open(y)
 #  tidyr::gather(columns,rows)
 
 # example found for extracting data from "facebook"
-jst_import_zip(
-  zip_archive = "facebook.zip",
-  import_spec = jst_define_import(
-    article = c(jst_get_article,
-                jst_get_footnotes,
-                jst_get_references),
-    ngram2 = jst_get_ngram
-  ),
-  out_file = "out_file"
-)
+# jst_import_zip(
+#  zip_archive = "facebook.zip",
+#  import_spec = jst_define_import(
+#    article = c(jst_get_article,
+#                jst_get_footnotes,
+#                jst_get_references),
+#    ngram2 = jst_get_ngram
+#  ),
+#  out_file = "out_file"
+#)
 
 
