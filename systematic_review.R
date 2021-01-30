@@ -3,10 +3,7 @@
 
 ## Systematic Review ######################
 
-<<<<<<< HEAD
 
-=======
->>>>>>> a653c1e30f5422e8afa31ae6d7a23cfe37a09165
 library(readr)
 library(dplyr)
 
@@ -15,9 +12,6 @@ library(dplyr)
 
 #load data "literature CDs" and check of the dimention and structure
 data<-read_csv("Included_literature_CDs.csv")
-id<-seq(1,length(data$Authors),by=1)
-
-data<-cbind(id,data)
 
 head(data)
 glimpse(data)
@@ -29,7 +23,7 @@ data
 
 #check if further "NAs" are in the "data" set
 table(is.na.data.frame(data))
-missing_values<-data[rowSums(is.na(data)) > 0, ] 
+missing_values<-data[rowSums(is.na(data)) > 0, ]
 
 missing_values["URL"]
 missing_values["Objectives"]
@@ -41,7 +35,7 @@ utils::browseURL(url)
 
 # the article is found at :
 # https://journals.lww.com/aidsonline/fulltext/1999/08200/mortality_in_young_adults_in_england_and_wales_.14.aspx
-# and missing "Journal" is: 
+# and missing "Journal" is:
 # Wolters Kluwer AIDS
 
 
@@ -60,8 +54,6 @@ plyr::count(data$Authors)
 
 #load data "literature_injuries" and check of the dimention and structure
 data_injury<-read_csv("Included_literature_injuries.csv")
-id<-seq(1,length(data_injury$Authors),by=1)
-data_injury<-cbind(id,data_injury)
 
 head(data_injury)
 glimpse(data_injury)
