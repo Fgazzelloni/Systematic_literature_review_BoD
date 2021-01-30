@@ -1,4 +1,5 @@
 ##########
+
 # [burden-eu] Systematic literature review of BoD studies ########
 
 ## Systematic Review ######################
@@ -99,7 +100,12 @@ require(readr)
 write.csv(data_duplicated_full,"data_duplicated_full.csv")
 
 
+###################################
 
+# open selected literatures to 
+data.frame(full$URL)
+
+utils::browseURL(url)
 
 
 
