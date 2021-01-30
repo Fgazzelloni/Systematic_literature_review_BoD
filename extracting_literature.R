@@ -176,6 +176,9 @@ head(pubmed_data,1)
 pubmed_data$Abstract <- as.character(pubmed_data$Abstract)
 pubmed_data$Abstract <- gsub(",", " ", pubmed_data$Abstract, fixed = TRUE)
 
+
+
+
 str(pubmed_data)
 
 
