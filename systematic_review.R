@@ -3,16 +3,14 @@
 # [burden-eu] Systematic literature review of BoD studies ########
 
 ## Systematic Review ######################
-
-
 library(readr)
 library(dplyr)
 
-
 ################################################
 
-#load data "literature CDs" and check of the dimention and structure
-data<-read_csv("Included_literature_CDs.csv")
+# load data "literature CDs" and check of the dimention and structure
+# data have been encoded to make the signs readable
+data<-read_csv("Included_literature_CDs.csv",locale = locale(encoding="WINDOWS-1252"))
 
 head(data)
 glimpse(data)
@@ -31,7 +29,7 @@ missing_values["Objectives"]
 missing_values["Title"]
 
 # url is not matching
-# url<-"https://pubmed-ncbi-nlm-nih-gov.eur.idm.oclc.org/10465078/"
+url<-"https://pubmed-ncbi-nlm-nih-gov.eur.idm.oclc.org/10465078/"
 utils::browseURL(url)
 
 # the article is found at :
@@ -53,8 +51,9 @@ plyr::count(data$Authors)
 
 ######################################################
 
-#load data "literature_injuries" and check of the dimention and structure
-data_injury<-read_csv("Included_literature_injuries.csv")
+# load data "literature_injuries" and check of the dimention and structure
+# data_injury has been encoded with locale = locale(encoding="WINDOWS-1252") to make the names readable
+data_injury<-read_csv("Included_literature_injuries.csv",locale = locale(encoding="WINDOWS-1252"))
 
 head(data_injury)
 glimpse(data_injury)
@@ -105,10 +104,17 @@ write.csv(data_duplicated_full,"data_duplicated_full.csv")
 
 ###################################
 
-# open selected literatures to 
-data.frame(full$URL)
+# open selected literatures to check the url
+library(tibble)
+url_full<-as_tibble(full$URL)
 
-utils::browseURL(url)
+# Using for loop method to open the articles on the web---------
+# for i to the maximum number of article ones wants to open
+for (i in 1:3){
+  browseURL(as.character(url_full[i,1]))  
+}
+
+
 
 
 
