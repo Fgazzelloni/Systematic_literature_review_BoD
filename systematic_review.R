@@ -134,9 +134,11 @@ for (i in 1:3){
   browseURL(as.character(url_full[i,1]))  
 }
 
+url_full[1,]
+full$Authors[1]
+full$Title[1]#"https://www.scielosp.org/article/bwho/2000.v78n5/655-666/
 
-
-
+full[2,]
 
 
 
