@@ -2,5 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-Included_literature_injuries.csv
-Included_literature_CDs.csv
+.data_duplicated_full.csv
+.Included_literature_CDs.csv
+.Included_literature_injuries.csv
+
