@@ -2,15 +2,21 @@
 # [burden-eu] Systematic literature review of BoD studies
 # Systematic Literature Review ###########################
 
+
+
 #libraries-----------------
+
 library(readr)
 library(dplyr)
 
 # Communicable Diseases ###############################################
 
+################################################
+
 # Load data "literature CDs" and check of the dimention and structure-----
 # data have been encoded to make the signs readable
 data<-read_csv("Included_literature_CDs.csv",locale = locale(encoding="WINDOWS-1252"))
+
 
 head(data)
 glimpse(data)
@@ -69,11 +75,13 @@ Included_literature_CDs_reviewed <- read_csv("~/Documents/R/Burden_EU/Included_l
                                             na = "NA")
 sum(is.na.data.frame(Included_literature_CDs_reviwed))
 
+
 # Injuries #####################################################
 
 # Load data "literature_injuries" and check of the dimention and structure-------
 # data_injury has been encoded with locale = locale(encoding="WINDOWS-1252") to make the names readable
 data_injury<-read_csv("Included_literature_injuries.csv",locale = locale(encoding="WINDOWS-1252"))
+
 
 head(data_injury)
 glimpse(data_injury)
