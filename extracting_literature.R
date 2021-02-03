@@ -56,7 +56,6 @@ length(medPkgShort$package)
 head(medPkgShort)
 
 shortList <- medPkgShort$package
-
 downloads <- cran_stats(shortList)
 
 head(downloads)
@@ -105,12 +104,14 @@ url
 utils::browseURL(url)
 
 
+
 search_epi<-arxiv_search("ti:injuries")
 arxiv_open(search_epi,limit=2)
 # https://arxiv.org/abs/nlin/0010012v1  (see if it is good for fire)
 # https://www.semanticscholar.org/paper/A-simple-model-for-the-spatial-spread-and-control-K%C3%A4ll%C3%A9n-Arcuri/e46c1f276aea9f04e0c7ba6f4d30c42069f423e3 (see if it is good for rabies)
 
 
+data(arxiv_cats)
 
 data(arxiv_cats)
 
@@ -177,23 +178,7 @@ pubmed_data$Abstract <- as.character(pubmed_data$Abstract)
 pubmed_data$Abstract <- gsub(",", " ", pubmed_data$Abstract, fixed = TRUE)
 
 
-
-
 str(pubmed_data)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
