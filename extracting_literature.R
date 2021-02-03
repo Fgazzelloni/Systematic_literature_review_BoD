@@ -22,10 +22,13 @@ library(knitr)
 #install.packages("wikifacts")
 
 library(aRxiv)
+library(medrxivr)
+
 library(jstor)
 library(RISmed)
 library(pubmed.mineR)
 library(easyPubMed)
+
 library(wikifacts)
 
 ls("package:aRxiv")
@@ -100,6 +103,10 @@ knitr::kable(
     dplyr::mutate(definition = wiki_define(name,sentence=1))
 )
 
+
+
+
+
 # arXiv search-------------------------
 url
 utils::browseURL(url)
@@ -109,8 +116,6 @@ search_epi<-arxiv_search("ti:injuries")
 arxiv_open(search_epi,limit=2)
 # https://arxiv.org/abs/nlin/0010012v1  (see if it is good for fire)
 # https://www.semanticscholar.org/paper/A-simple-model-for-the-spatial-spread-and-control-K%C3%A4ll%C3%A9n-Arcuri/e46c1f276aea9f04e0c7ba6f4d30c42069f423e3 (see if it is good for rabies)
-
-
 
 data(arxiv_cats)
 
@@ -126,6 +131,43 @@ arxiv_open(y)
 
 
 ?arxiv_search
+
+
+
+# medrxivr search ------------------
+# source: https://github.com/ropensci/medrxivr
+?medrxivr
+
+mx_api_content(server = "medrxiv") #creates a local copy of all data available from the medRxiv API at the time the function is run.
+# Get a copy of the database from the live medRxiv API endpoint
+preprint_data <- mx_api_content()
+
+
+
+# Perform a simple search
+results <- mx_search(data = preprint_data,
+                     query ="DALY")
+#Found 16 record(s) matching your search. 2021/01/31
+
+# Perform an advanced search
+topic1  <- c("DALY","Europe","burden")  # Combined with Boolean OR
+
+myquery <- list("DALY","Europe","burden") # Combined with Boolean AND
+results <- mx_search(data = preprint_data,
+                     query = myquery)
+result_url<-results$link_page
+browseURL(result_url)
+
+names(results)
+results<-as_tibble(results)
+
+results%>%select(authors ,date,title,link_page)
+
+# biorxiv search ----------------------------------
+
+mx_search(data = preprint_data,fields="abstract")
+mx_api_content(server = "biorxiv") #creates a local copy of all data available from the bioRxiv API endpoint at the time the function is run. Note: due to it’s size,
+# downloading a complete copy of the bioRxiv repository in this manner takes a long time (~ 1 hour).
 
 # jstor search--------------------
 

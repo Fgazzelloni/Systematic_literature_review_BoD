@@ -10,6 +10,7 @@ library(dplyr)
 
 
 ################################################
+# setwd("C:/Users/Valerio/Documents/R/Projects/Systematic_literature_review_BoD")
 
 #load data "literature CDs" and check of the dimention and structure
 data<-read_csv("Included_literature_CDs.csv")
@@ -39,6 +40,21 @@ utils::browseURL(url)
 # and missing "Journal" is:
 # Wolters Kluwer AIDS
 
+
+# check for duplicates-------------------------
+names(data)
+data_processed<-data
+dupes<-data_processed%>%
+  dplyr::select(Authors,Title,URL,Objectives)%>%
+  janitor::get_dupes()
+
+dupes_url<-dupes$URL[1]
+browseURL(dupes_url)
+
+# investigate the same URL
+data_processed%>%
+  filter(URL==dupes_url)%>%
+  glimpse()
 
 # it looks like there is one duplicate
 no_duplicates_data<-distinct(data)
@@ -105,10 +121,12 @@ write.csv(data_duplicated_full,"data_duplicated_full.csv")
 
 ###################################
 
-# open selected literatures to 
+# open selected literatures to
 data.frame(full$URL)
 
 utils::browseURL(url)
+
+
 
 
 
