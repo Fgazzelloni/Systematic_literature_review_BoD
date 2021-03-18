@@ -2,6 +2,14 @@
 
 # extract from scientific journals
 
+# Eric library of educational research collection provided by US Institute of education science (IES) Research 
+# Google Scholar source for many disciplines
+# PubMed (MEDLINE/PubMed - Mesh) source for free access abstract provided by US National Library of Medicine
+# ProQuest search for may different databases
+# EBSCO for-fee online research service
+# PsycINFO commercial for psycological and other topics provided by the America psycological association
+
+
 # libraries suggested to make the packages working----------------
 library(dplyr)
 library(httr)
