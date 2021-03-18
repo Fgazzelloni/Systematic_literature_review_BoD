@@ -16,7 +16,8 @@ library(dplyr)
 
 # Load data "literature CDs" and check of the dimention and structure-----
 # data have been encoded to make the signs readable
-data<-read_csv("Included_literature_CDs.csv",locale = locale(encoding="WINDOWS-1252"))
+
+data<-read_csv("GBD/Systematic_literature_review_BoD/Included_literature_CDs.csv",locale = locale(encoding="WINDOWS-1252"))
 
 
 head(data)
@@ -99,7 +100,7 @@ sum(is.na.data.frame(Included_literature_CDs_reviwed))
 
 # Load data "literature_injuries" and check of the dimention and structure-------
 # data_injury has been encoded with locale = locale(encoding="WINDOWS-1252") to make the names readable
-data_injury<-read_csv("Included_literature_injuries.csv",locale = locale(encoding="WINDOWS-1252"))
+data_injury<-read_csv("GBD/Systematic_literature_review_BoD/Included_literature_injuries.csv",locale = locale(encoding="WINDOWS-1252"))
 
 
 head(data_injury)
@@ -168,6 +169,37 @@ full$Authors[1]
 full$Title[1]#"https://www.scielosp.org/article/bwho/2000.v78n5/655-666/
 
 full[2,]
+
+# checking mismatching in CSVs files opened in excel----------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
