@@ -1,0 +1,842 @@
+---
+title: "GBD review part II"
+author: "FG"
+date: "27 October 2021"
+output: 
+  html_document: 
+    fig_caption: yes
+---
+
+Use the knitr root.dir option in the setup chunk to change the working directory for notebook chunks
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# data load from IHME check
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+```
+
+
+
+```{r}
+code<- read_csv(here::here("data/IHME_GBD_2019_CODEBOOK_Y2020M11D25.CSV"),
+                skip = 1)%>%
+  janitor::clean_names()
+
+#View(code)
+#code%>%names
+```
+
+
+
+```{r}
+code%>%count(age_group_id,age_group_name)%>%
+  filter(age_group_id=="27")
+code%>%count(metric_id,metric_name)
+code%>%count(sex_id,sex)
+
+
+causes_l2 <- code%>%count(cause_id,cause_name)
+
+
+daly_2019 <-  read_csv(here::here("data/IHME-GBD_2019_DATA-1c2ea0bb-1.csv"))
+#daly_2019%>%View
+
+```
+
+Age-standardized	 DALY, YLDs and YLLs - metric_id (2,3)=Percent,Rate
+```{r}
+my_df<- daly_2019%>%
+  select(-location)%>%
+  rename(measure_id=measure,cause_id=cause,metric_id=metric) %>%
+  mutate(measure_name=case_when(measure_id=="2" ~ "DALYs",
+                                measure_id=="3"~"YLDs",
+                                measure_id=="4"~"YLLs"),
+         .after=measure_id)%>%
+  mutate(metric_name=case_when(metric_id=="2"~"Percent",
+                               metric_id=="3"~"Rate"),
+         .after=metric_id) %>%
+mutate(sex_name=case_when(sex=="1"~"M",
+                          sex=="2"~"F"),
+                          .after=sex)%>%
+  select(-age)%>%
+  left_join(causes_l2,by="cause_id")
+
+my_df%>%head
+```
+
+
+## My function:
+
+```{r eval=FALSE, include=FALSE}
+library(testthat)
+unlist_vr <- function(df,cause){
+  unlist = df %>%
+    count(cause)%>%
+    select(-n)%>%
+    unlist()
+ unlist
+}
+
+unlist <- daly_2019 %>%
+    count(cause)%>%
+    select(-n)%>%
+    unlist()
+ unlist
+ 
+# apply the functon 
+cause_list<- unlist_vr(daly_2019,cause=cause)
+# test the function
+testthat::expect_equal(unlist_vr(daly_2019,cause),unlist) # ok!
+```
+
+#-------------
+
+
+
+# exploratory data analysis
+
+```{r}
+my_df%>%head
+```
+
+DALYs=YLLs+YLDs
+x=YLDs
+y=YLLs
+source for {scales} usage: http://www.sthda.com/english/wiki/ggplot2-axis-scales-and-transformations
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggrepel)
+library(viridis)
+library(extrafont)
+#fonts()
+library(showtext)
+
+
+my_df_text <- my_df%>% #count(metric_name)
+  filter(metric_name=="Rate") %>%
+  count(measure_name,sex,cause_name,val)%>%
+  pivot_wider(names_from=measure_name,values_from=val)%>%
+  count(sex,cause_name,YLLs,DALYs,YLDs) %>% 
+  group_by(cause_name) %>%
+  summarize(YLLs=max(YLLs),DALYs=max(DALYs),YLDs=max(YLDs))
+
+final <- my_df%>% #count(metric_name)
+  filter(metric_name=="Rate") %>%
+  count(measure_name,sex,cause_name,val)%>%
+  pivot_wider(names_from=measure_name,values_from=val)%>%
+  count(sex,cause_name,YLLs,DALYs,YLDs) %>% #pull(YLLs)%>%summary()
+  ggplot(aes(x=YLDs,y=YLLs,group=cause_name))+
+  
+  geom_text_repel(data=my_df_text,
+                  aes(label=cause_name),family="Roboto Condensed",
+                  size=2.5,segment.colour = "grey")+
+  
+  
+  geom_point(aes(size=DALYs,color=factor(DALYs)),stroke=1,alpha=0.2)+
+  
+  scale_y_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
+                labels = scales::comma_format())+
+  scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
+                labels = scales::comma_format())+
+  scale_color_discrete(guide = "colourbar")+
+  scale_size(guide = "legend")+
+  labs(title="\nYears of Life Lost by Years Lived with Disabilities",
+       subtitle="sized by DALYs in 2019",
+       caption="Datasource: IHME GBD 2019 - DataViz: Federica Gazzelloni")+
+  ggthemes::theme_pander()+
+  theme(text = element_text(family="Roboto Condensed"),
+        plot.caption = element_text(size=8),
+        plot.background = element_rect(color="grey"),
+        axis.title.y = element_text(vjust=-1.5))
+  
+# save final plot
+ragg::agg_png(here::here("graphs/bubble_GBD_2019.png"),
+              res = 320, width = 8, height = 6, units = "in")
+final
+dev.off()
+```
+
+
+
+## second plot
+
+```{r}
+sex2=c("Male","Female")
+names(sex2)<-c("1","2")
+
+
+my_legend <- my_df%>%
+  count(cause_id,cause_name)%>%
+  select(-n)%>%
+  arrange(cause_id)
+
+
+my_legend_I <- my_df%>%
+  count(cause_id,cause_name)%>%
+  select(-n)%>%
+  arrange(cause_id)%>%
+  slice(1:11)
+
+my_legend_II <- my_df%>%
+  count(cause_id,cause_name)%>%
+  select(-n)%>%
+  arrange(cause_id)%>%
+  slice(12:22)
+
+
+cbind(my_legend_I,my_legend_II)
+
+
+line_plot <- my_df%>%
+  filter(measure_name=="DALYs",metric_name=="Rate") %>%
+  count(cause_name,sex,val,upper,lower)%>%
+  #mutate(cause_id=as.factor(cause_id))%>%
+  ggplot()+
+  geom_line(aes(x=fct_reorder(cause_name,upper),y=upper,group=sex),color="darkred")+
+  geom_line(aes(x=fct_reorder(cause_name,val),y=val,group=sex),color="grey33")+
+  geom_line(aes(x=fct_reorder(cause_name,lower),y=lower,group=sex),color="darkblue")+
+  geom_hline(aes(yintercept=median(val)),linetype="dashed")+
+  facet_wrap(vars(sex),labeller=as_labeller(sex2))+
+  guides(x=ggh4x::guide_axis_manual(label_size = c(9,8)))+
+  labs(title="\nGBD 2019 Level2 cause of DALYs by gender",
+       subtitle = "",
+       caption="Datasource: IHME GBD 2019, DataViz: Federica Gazzelloni",
+       x="Level2 Causes",y="DALYs")+
+  ggthemes::theme_pander()+
+  coord_flip()+
+  theme(text = element_text(family="Roboto Condensed"),
+        axis.text.x = element_text(angle=00,vjust=0.2),
+        axis.title.x = element_text(vjust=-0.5),
+        axis.title.y = element_text(vjust=-0.8),
+        plot.title.position = "panel",
+        plot.title = element_text(hjust=-0.5),
+        plot.background = element_rect(color="grey"),
+        panel.grid.minor = element_blank())
+
+# save final plot
+ragg::agg_png(here::here("graphs/line_GBD_2019.png"),
+              res = 320, width = 8, height = 6, units = "in")
+line_plot
+dev.off()
+```
+
+
+
+```{r}
+my_df%>%
+  filter(measure_name=="DALYs",metric_name=="Rate") %>%
+  count(cause_name,sex,val,upper,lower)%>%
+  #mutate(cause_id=as.factor(cause_id))%>%
+  ggplot()+
+  #geom_line(aes(x=fct_reorder(cause_id,upper),y=upper,group=sex),color="darkred")+
+  #geom_line(aes(x=fct_reorder(cause_id,val),y=val,group=sex),color="grey33")+
+  #geom_line(aes(x=fct_reorder(cause_id,lower),y=lower,group=sex),color="darkblue")+
+  geom_col(aes(x=fct_reorder(cause_name,val),y=val,group=sex),color="darkblue")+
+  geom_hline(aes(yintercept=median(val)),linetype="dashed")+
+  geom_hline(aes(yintercept=mean(val)),linetype="dashed",color="darkred")+
+  geom_hline(aes(yintercept=mean(val)+2*sd(val)),linetype="dashed",color="darkgreen")+
+  geom_hline(aes(yintercept=mean(val)-2*sd(val)),linetype="dashed",color="darkgreen")+
+  facet_wrap(vars(sex),labeller=as_labeller(sex2))+
+  guides(x=ggh4x::guide_axis_manual(label_size = c(9,8)))+
+  labs(title="GBD 2019 Level2 cause of DALYs by gender",
+       subtitle = "",
+       caption="Datasource: IHME GBD 2019, DataViz: Federica Gazzelloni",
+       x="Level2 Causes",y="")+
+  ggthemes::theme_pander()+
+  coord_flip()+
+  theme(text = element_text(family="Roboto Condensed"),
+        axis.text.x = element_text(angle=40,vjust=0.2),
+        axis.title.x = element_text(vjust=-0.5),
+        panel.grid.minor = element_blank())
+```
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+my_df%>%
+  filter(metric_name=="Rate")%>%
+  filter(sex_name=="M")%>%
+  select(-year,-metric_name,-sex,-upper,-lower,-measure_id,-metric_id,-n,-cause_id) %>%
+  pivot_wider(names_from = measure_name,values_from=val) %>%
+  #pivot_longer(cols = c("YLLs","YLDs"),names_to="comp",values_to="vals") %>%
+arrange(DALYs) %>%
+  #mutate(DALYs=as.factor(DALYs))%>%
+  ggplot(aes(DALYs))+
+  geom_histogram()
+```
+
+```{r}
+dalys_df <- my_df%>%
+  filter(measure_name=="DALYs",metric_name=="Rate") %>%#count(cause_name)
+  count(cause_name,sex,val,upper,lower)%>%
+  mutate(cause_name=as.factor(cause_name))%>%
+  group_by(sex)%>%
+  mutate(cause_name=fct_reorder(cause_name,val))%>%
+  ungroup()%>%
+  rename(DALYs=val)%>%
+  select(-n)
+
+
+ylls_df <- my_df%>%
+  filter(measure_name=="YLLs",metric_name=="Rate") %>%
+  count(cause_name,sex,val,upper,lower)%>%
+  mutate(cause_name=as.factor(cause_name))%>%
+  group_by(sex)%>%
+  mutate(cause_name=fct_reorder(cause_name,val))%>%
+  ungroup()%>%
+  select(-upper,-lower,-n)%>%
+  rename(YLLs=val)
+
+ylds_df <- my_df%>%
+  filter(measure_name=="YLDs",metric_name=="Rate") %>%
+  count(cause_name,sex,val,upper,lower)%>%
+  mutate(cause_name=as.factor(cause_name))%>%
+  group_by(sex)%>%
+  mutate(cause_name=fct_reorder(cause_name,val))%>%
+  ungroup()%>%
+  select(-upper,-lower,-n)%>%
+  rename(YLDs=val)
+
+
+pyr_df <- dalys_df%>%
+  inner_join(ylls_df,by=c("cause_name","sex"))%>%
+ # mutate(YLDs=DALYs-YLLs)%>%
+  inner_join(ylds_df,by=c("cause_name","sex")) %>%
+  pivot_longer(cols=c("YLLs","YLDs"),names_to="comp",values_to="comp_vals")
+```
+
+
+
+
+```{r}
+male <- pyr_df%>%
+  filter(sex=="1") %>% #pull(DALYs)%>%summary
+  ggplot()+
+  geom_col(aes(x=cause_name,y=comp_vals,fill=factor(comp))) +
+  geom_errorbar(aes(x=cause_name,y=comp_vals,ymin=lower,ymax=upper),size=0.15) +
+  facet_wrap(vars(sex),labeller=as_labeller(sex2))+
+  scale_y_continuous(expand = c(0,0),breaks = seq(0,4100,by=1000))+
+  labs(title="",
+       subtitle = "",fill="",
+       caption="Datasource: IHME GBD 2019, DataViz: Federica Gazzelloni",
+       x="",y="")+
+  ggthemes::theme_pander()+
+  coord_flip()+
+  scale_fill_manual(values = c("lightblue","gold"))+
+  theme(text = element_text(family="Roboto Condensed"),
+        axis.ticks = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(angle=0,vjust=0.2),
+        axis.title.x = element_text(vjust=-0.5),
+        panel.grid.minor = element_blank(),
+        legend.position = c(0.5,1.15),
+        legend.direction = "horizontal")
+
+female <- pyr_df%>%
+  filter(sex=="2")%>%
+  mutate(cause_name=fct_reorder(cause_name,DALYs))%>%
+  ungroup()%>%
+  
+  ggplot()+
+  geom_col(aes(x=cause_name,y=comp_vals,fill=factor(comp)))+
+  geom_errorbar(aes(x=cause_name,y=comp_vals,ymin=lower,ymax=upper),size=0.15)+
+  facet_wrap(vars(sex),labeller=as_labeller(sex2))+
+  scale_y_continuous(trans = "reverse",expand = c(0,0),breaks=c(0,1000,2000,3000,4000),limits = c(4100,0))+
+  labs(title="European Union GBD 2019 DALYs",
+       subtitle = "Levels 2 causes by gender (Rate values)",fill="",
+       x="",y="")+
+  ggthemes::theme_pander()+
+  coord_flip()+
+  scale_fill_manual(values = c("lightblue","gold"))+
+  theme(text = element_text(family="Roboto Condensed"),
+        plot.title.position = "plot",
+        plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.45),
+        axis.text.x = element_text(angle=0,vjust=0.2),
+        axis.title.x = element_text(vjust=-0.5,hjust=-0.5),
+        panel.grid.minor = element_blank(),
+        legend.position ="none")
+
+library(patchwork)
+py_causes_plot <- female+male
+```
+
+
+```{r}
+  # save final plot
+ragg::agg_png(here::here("graphs/py_causes_plot.png"),
+              res = 320, width = 8, height = 6, units = "in")
+py_causes_plot
+dev.off()
+```
+
+
+
+
+```{r}
+library(ggridges)
+library(paletteer)
+library(pals)
+
+density_plot<-  my_df%>%
+  filter(metric_name=="Rate") %>%
+
+  ggplot(aes(x=val, y=measure_name,fill=measure_name))+
+  geom_density_ridges_gradient(jittered_points = TRUE, scale = 2,bandwidth=200,
+                               point_size = 0.8, size = 0.5,col="grey33") +
+  geom_boxplot(color="darkorange",width=0.1,outlier.color = NA,show.legend = F)+
+  geom_rug()+
+  scale_fill_grey()+
+  guides(x=ggh4x::guide_axis_manual(label_size = c(9,8)))+
+  labs(title="GBD 2019 Level2 cause DALYs,YLLs,YLDs density curves",
+       subtitle = "",
+       caption="Datasource: IHME GBD 2019, DataViz: Federica Gazzelloni\n",
+       x="Level2 Causes",y="",fill="")+
+  ggthemes::theme_pander()+
+  theme(text = element_text(family="Roboto Condensed"),
+        axis.text.x = element_text(angle=0,vjust=0.2),
+        axis.title.x = element_text(vjust=-0.5),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(vjust=-1),
+        plot.caption = element_text(vjust=-0.5,hjust=0.9),
+        legend.position = c(0.6,0.8),
+        legend.direction = "horizontal",
+        plot.background = element_rect(color = "grey"))
+  
+  # save final plot
+ragg::agg_png(here::here("graphs/density_GBD_2019.png"),
+              res = 320, width = 8, height = 6, units = "in")
+density_plot
+dev.off()
+```
+
+# NOT RUN
+```{r eval=FALSE, include=FALSE}
+library(patchwork)
+
+plot <- line_plot | final/ density_plot
+
+library(ggpubr)
+graphics <- ggarrange(final)
+graphics2 <- ggarrange(line_plot)
+graphics3 <- ggarrange(density_plot)
+
+plot <- graphics+graphics2+graphics3
+
+ragg::agg_png(here::here("graphs/plot.png"),
+              res = 320, width = 8, height = 6, units = "in")
+plot
+dev.off()
+
+```
+
+
+```{r}
+my_df
+```
+
+## All countries
+```{r}
+
+data_all_countries <- read_csv(here::here("data/data_all_countries.csv"))
+head(data_all_countries)
+
+data_all_countries%>%count(measure_id)
+
+
+data_all_countries%>%filter(measure_id=="1") %>%
+  select(location_name,cause_name,val)%>%arrange(-val)%>%rename(deaths=val)%>%
+  slice(1:50)%>%
+  ggplot(aes(x=deaths,y=location_name,group=factor(cause_name)))+
+  geom_col(show.legend = F)+
+  facet_wrap(vars(cause_name),scale="free")+
+  labs(title="Deaths")
+```
+
+```{r}
+data_all_countries%>%
+  names
+```
+
+All countries
+
+```{r}
+data_all_countries%>% # measure_name = number , age_name = All ages
+  filter(measure_name=="Deaths") %>%
+  count(location_name,cause_name,val,upper,lower) %>%
+  ggplot()+
+  geom_col(aes(x=fct_reorder(cause_name,val),y=val,group=location_name),color="darkblue")+
+  geom_hline(aes(yintercept=median(val)),linetype="dashed")+
+  geom_hline(aes(yintercept=mean(val)),linetype="dashed",color="darkred")+
+  geom_hline(aes(yintercept=mean(val)+2*sd(val)),linetype="dashed",color="darkgreen")+
+  geom_hline(aes(yintercept=mean(val)-2*sd(val)),linetype="dashed",color="darkgreen")+
+  guides(x=ggh4x::guide_axis_manual(label_size = c(9,8)))+
+  labs(title="GBD 2019 Level2 cause of Deaths numbers",
+       subtitle = "grouped by country",
+       caption="Datasource: IHME GBD 2010 - 2019, DataViz: Federica Gazzelloni",
+       x="Level2 Causes",y="")+
+  ggthemes::theme_pander()+
+  coord_flip()+
+  theme(text = element_text(family="Roboto Condensed"),
+        axis.text.x = element_text(angle=40,vjust=0.2),
+        axis.title.x = element_text(vjust=-0.5),
+        panel.grid.minor = element_blank())
+```
+
+
+My EU countries:
+```{r}
+data_eu_countries <- read_csv(here::here("data/Table1_v1.xlsx - Folha1.csv"))
+head(data_eu_countries)
+```
+
+
+```{r}
+my_eu_countries <- data_eu_countries$...1[!is.na(data_eu_countries$...1)]
+```
+
+
+```{r}
+data_all_countries%>%
+  filter(location_name%in%my_eu_countries)%>% 
+  filter(measure_name=="Deaths") %>%
+  count(location_name,cause_name,val,upper,lower) %>%
+  select(-n)%>%
+  mutate(val=round(val,2))%>%#pull(val)%>%summary
+  group_by(location_name,cause_name)%>%
+  summarize(m_val=mean(val),.groups="drop")%>%
+  ungroup() %>%
+  mutate(location_name=as.factor(location_name))%>%
+  arrange(-m_val) %>%
+  #filter(location_name%in%c("Italy","France","Croatia","Latvia","Austria","Lithuania","Bulgaria")) %>%
+  slice(1:50)%>%
+  ggplot()+
+  geom_col(aes(x=reorder(location_name,-m_val),y=m_val,group=cause_name),show.legend = F)+
+  geom_hline(aes(yintercept=median(m_val)),linetype="dashed")+
+  geom_hline(aes(yintercept=mean(m_val)),linetype="dashed",color="darkred")+
+  geom_hline(aes(yintercept=mean(m_val)+2*sd(m_val)),linetype="dashed",color="darkgreen")+
+  geom_hline(aes(yintercept=mean(m_val)-2*sd(m_val)),linetype="dashed",color="darkgreen")+
+  guides(x=ggh4x::guide_axis_manual(label_size = c(9,8)))+
+  
+  labs(title="GBD 2010-2019 EU Countries Deaths number",
+       subtitle = "grouped by level2 cause",
+       caption="Datasource: IHME GBD 2019, DataViz: Federica Gazzelloni",
+       x="EU Countries",y="Deaths by number")+
+  ggthemes::theme_pander()+
+  coord_flip()+
+  facet_wrap(vars(cause_name),scale="free")+
+  theme(text = element_text(family="Roboto Condensed"),
+        axis.text.x = element_text(angle=0,vjust=0.2),
+        axis.text.y = element_text(size=10),
+        axis.title.x = element_text(vjust=-0.5),
+        panel.grid.minor = element_blank())
+```
+
+## European Union
+```{r}
+Deaths_p <- data_all_countries%>%
+  filter(location_name%in%my_eu_countries)%>% 
+  filter(location_name=="European Union") %>%#count(metric_name)
+  select(measure_id,measure_name,cause_name,val) %>%
+  filter(measure_id=="1")%>%
+  arrange(-val) %>%
+  ggplot(aes(x=val,y=fct_reorder(cause_name,-val),fill=val))+
+  geom_col(show.legend = F)+
+  #scale_fill_continuous(guide =guide_colorbar())+
+  labs(title="Deaths",x="",y="",fill="")+
+  theme(legend.position = c(-0.5,1.07),
+        legend.direction = "horizontal")
+```
+
+```{r}
+DALYs_p <- data_all_countries%>%
+  filter(location_name%in%my_eu_countries)%>% 
+  filter(location_name=="European Union") %>%
+  select(measure_id,measure_name,cause_name,val) %>%
+  filter(measure_id=="2")%>%
+  arrange(-val) %>%
+  ggplot(aes(x=val,y=fct_reorder(cause_name,-val),fill=val))+
+  geom_col(show.legend = F)+
+  #scale_fill_continuous(guide = guide_colorbar())+
+  labs(title="DALYs",x="",y="",fill="")+
+  theme(legend.position = c(-0.5,1.07),
+        legend.direction = "horizontal")
+```
+
+```{r}
+YLDs_p <- data_all_countries%>%
+  filter(location_name%in%my_eu_countries)%>% 
+  filter(location_name=="European Union") %>%
+  select(measure_id,measure_name,cause_name,val) %>%
+  filter(measure_id=="3")%>%
+  arrange(-val) %>%
+  ggplot(aes(x=val,y=fct_reorder(cause_name,-val),fill=val))+
+  geom_col(show.legend = F)+
+  #scale_fill_continuous(guide = guide_colorbar())+
+  labs(title="YLDs",x="",y="",fill="")+
+  theme(legend.position = c(-0.5,1.07),
+        legend.direction = "horizontal")
+```
+
+```{r}
+YLLs_p <- data_all_countries%>%
+  filter(location_name%in%my_eu_countries)%>% 
+  filter(location_name=="European Union") %>%
+  select(measure_id,measure_name,cause_name,val) %>%
+  filter(measure_id=="4")%>%
+  arrange(-val) %>%
+  ggplot(aes(x=val,y=fct_reorder(cause_name,-val),fill=val))+
+  geom_col(show.legend = T)+
+  scale_fill_continuous(guide = guide_colorbar())+
+  labs(title="YLLs",x="",y="",fill="values")+
+  theme(legend.position = c(0.7,1.1),
+        legend.direction = "horizontal",
+        legend.key.size = unit(0.5,units="cm"),
+        legend.background = element_blank())
+```
+
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(patchwork)
+all_measure_p <-(DALYs_p + YLLs_p)/(YLDs_p+ Deaths_p)
+library(cowplot)
+plot <-plot_grid(all_measure_p)
+final <- plot +
+  theme(plot.background = element_blank(),
+        plot.margin = margin(t=0,r=1,b=0,l=1,unit="pt"))
+
+final
+```
+
+```{r}
+library(ggpubr)
+graphics <- ggarrange(final)
+
+metrics_barplot <- annotate_figure(graphics,
+                              top = text_grob("EU Countries Health Metrics 2010-2019",
+                                              color = c("black"), face = "bold", size = 20
+                                              ),
+                              bottom = text_grob("Datasource: IHME GHDx 2019 database Level 2 causes",
+                                                 color = "black",
+                                                 hjust = 0.5, x = 0.5, face = "bold.italic", size = 9)
+)
+```
+
+
+
+```{r}
+ragg::agg_png(here::here("graphs/metrics_barplot.png"),
+              res = 320, width = 12, height = 8, units = "in")
+metrics_barplot
+dev.off()
+```
+
+
+
+for european countries
+
+
+```{r}
+df_full_l2<- read_csv(here::here("data/level2_cause_world_all.csv"))
+
+df_full_l2%>%count(metric)
+```
+
+
+Age standardize all countries ----> Age standardize EU countries
+```{r}
+code%>%count(sex,sex_id)
+
+eu_all_metrics<- df_full_l2%>%#count(metric)
+  left_join(select(code,location_id,location_name),by=c("location"="location_id"))%>%
+  filter(location_name%in%my_eu_countries)%>%
+  select(-location)%>%
+  left_join(select(code,measure_id,measure_name),by=c("measure"="measure_id"))%>%
+  select(-measure,-age)%>%
+  left_join(select(code,metric_id,metric_name),by=c("metric"="metric_id"))%>%
+  select(-metric) %>%
+  left_join(select(code,cause_id,cause_name),by=c("cause"="cause_id"))%>%
+  select(-cause)%>%
+  left_join(select(code,sex,sex_id),by=c("sex"="sex_id"))%>%
+  select(-sex)%>%
+  rename(sex=sex.y)
+
+eu_all_metrics%>%
+  glimpse
+    
+```
+
+```{r}
+library(showtext)
+library(extrafont)
+showtext_opts(dpi = 320)
+showtext_auto(enable = T)
+sysfonts::font_families_google()
+font_add_google("Snippet", "Snippet")
+
+
+boxplot<-eu_all_metrics%>%#count(metric_name)
+  filter(#location_name%in%c("Luxembourg","Italy"),
+         !sex=="Both"
+         #measure_name=="Deaths"
+         #cause_name=="Nutritional deficiencies"
+         ) %>%
+  arrange(-val)%>%
+  ggplot(aes(x=val,y=fct_reorder(location_name,-val),group=metric_name))+
+  geom_point(size=0.5,aes(color=factor(sex)),show.legend = F)+
+  geom_boxplot(aes(group=location_name),outlier.colour = NA)+
+  labs(x="Rate",y="",title="EU level 2 causes")+
+  facet_wrap(measure_name~sex,scales = "free",ncol = 2)+
+  theme(text = element_text(family = "Snippet"),
+        axis.text.y = element_text(size=6))
+
+ragg::agg_png(here::here("graphs/boxplot.png"),
+              res = 320, width = 12, height = 10, units = "in")
+boxplot
+dev.off()
+```
+
+```{r}
+eu_all_metrics
+```
+
+```{r}
+dalys_country_df%>%names;ylls_country_df%>%names;pyr_country_df%>%names
+```
+
+
+```{r dataset_country_barplot}
+dalys_country_df <- eu_all_metrics%>%
+  select(-year_start,-year_end)%>%
+  filter(!sex=="Both")%>%
+  mutate(measure_name=case_when(measure_name=="DALYs (Disability-Adjusted Life Years)"~"DALYs",
+                                measure_name=="YLLs (Years of Life Lost)"~"YLLs",
+                                measure_name=="YLDs (Years Lived with Disability)"~"YLDs",
+                                TRUE~"Deaths"))%>%
+  filter(measure_name=="DALYs",metric_name=="Rate") %>%
+  count(location_name,sex,val,upper,lower)%>%
+  mutate(location_name=as.factor(location_name))%>%
+  group_by(sex)%>%
+  mutate(location_name=fct_reorder(location_name,val))%>%
+  ungroup()%>%
+  rename(DALYs=val)%>%
+  select(-n)
+
+
+ylls_country_df <- eu_all_metrics%>%
+  select(-year_start,-year_end)%>%
+  filter(!sex=="Both")%>%
+  mutate(measure_name=case_when(measure_name=="DALYs (Disability-Adjusted Life Years)"~"DALYs",
+                                measure_name=="YLLs (Years of Life Lost)"~"YLLs",
+                                measure_name=="YLDs (Years Lived with Disability)"~"YLDs",
+                                TRUE~"Deaths"))%>%
+  filter(measure_name=="YLLs",metric_name=="Rate") %>%
+  count(location_name,sex,val,upper,lower)%>%
+  mutate(location_name=as.factor(location_name))%>%
+  group_by(sex)%>%
+  mutate(location_name=fct_reorder(location_name,val))%>%
+  ungroup()%>%
+  select(-upper,-lower,-n)%>%
+  rename(YLLs=val)
+
+
+pyr_country_df <- dalys_country_df%>%
+  inner_join(ylls_country_df,by=c("location_name","sex"))%>%
+  mutate(YLDs=DALYs-YLLs)%>%
+  pivot_longer(cols=c("YLLs","YLDs"),names_to="comp",values_to="comp_vals")%>%
+  arrange(-DALYs)%>%
+  filter(DALYs>0)
+```
+
+
+
+
+```{r}
+
+male <- pyr_country_df%>%#count(sex)
+  filter(sex=="Male") %>%
+  ggplot()+
+  geom_col(aes(x=location_name,y=DALYs,fill=factor(comp))) +
+  geom_errorbar(aes(x=location_name,y=DALYs,ymin=lower+DALYs,ymax=upper+DALYs))+
+  facet_wrap(vars(sex),scale="free")+
+  labs(title="",
+       subtitle = "",fill="",
+       caption="Datasource: IHME GBD 2019, DataViz: Federica Gazzelloni",
+       x="",y="")+
+  ggthemes::theme_pander()+
+  coord_flip()+
+  scale_fill_manual(values = c("lightblue","gold"))+
+  theme(#text = element_text(family="Roboto Condensed"),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(angle=0,vjust=0.2),
+        axis.title.x = element_text(vjust=-0.5),
+        panel.grid.minor = element_blank(),
+        legend.position = c(0.5,1.15),
+        legend.direction = "horizontal")
+
+female <- pyr_country_df%>%
+  filter(sex=="Female")%>%
+  mutate(location_name=fct_reorder(location_name,DALYs))%>%
+  ungroup()%>%
+  ggplot()+
+  geom_col(aes(x=location_name,y=DALYs,fill=factor(comp)))+
+  geom_errorbar(aes(x=location_name,y=DALYs,ymin=lower+DALYs,ymax=upper+DALYs))+
+  facet_wrap(vars(sex),scale="free")+
+  scale_y_continuous(trans = "reverse")+
+  labs(title="European Union countries GBD 2019 DALYs",
+       subtitle = "levels 2 causes by gender",fill="",
+       x="",y="DALYs")+
+  ggthemes::theme_pander()+
+  coord_flip()+
+  scale_fill_manual(values = c("lightblue","gold"))+
+  theme(#text = element_text(family="Roboto Condensed"),
+        #axis.text.y = element_blank(),
+        axis.text.x = element_text(angle=0,vjust=0.2),
+        axis.title.x = element_text(vjust=-0.5,hjust=-0.5),
+        panel.grid.minor = element_blank(),
+        legend.position ="none")
+
+library(patchwork)
+female+male
+```
+
+
+
+```{r}
+library(gt)
+
+eu_table<- eu_all_metrics %>% #Percent
+  filter(sex=="Both")%>%
+  select(-year_start,-year_end,metric_name,-sex,-upper,-lower) %>%
+  pivot_wider(names_from = metric_name,values_from=val) %>%
+  pivot_wider(names_from = measure_name,values_from=c("Percent","Rate")) %>%
+  group_by(location=location_name)%>%
+  summarise(across(where(is.numeric), ~ round(mean(.x, na.rm = TRUE)*100,2)))
+
+
+eu_table <- gt(eu_table)
+
+eu_table
+
+```
+
+```{r}
+eu_table_perc<- eu_all_metrics %>% #Percent
+  filter(metric_name=="Percent",sex=="Both")%>%
+  select(-year_start,-year_end,-metric_name,-sex,-upper,-lower) %>%
+  pivot_wider(names_from = measure_name,values_from=val) %>%
+  group_by(location=location_name)%>%
+  summarise(across(where(is.numeric), ~ round(mean(.x, na.rm = TRUE)*100,2)))
+
+
+eu_table <- gt(eu_table_perc)
+
+eu_table_perc
+```
+
+
